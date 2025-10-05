@@ -2,6 +2,12 @@
 class ScheduleManager {
     constructor() {
         this.schedule = this.loadFromStorage() || {};
+        // تحديث نموذج البيانات لدعم عدة مواد في نفس الوقت
+        this.customSubjects = this.loadCustomSubjects() || [
+            'الرياضيات', 'العلوم', 'اللغة العربية', 'اللغة الإنجليزية',
+            'التاريخ', 'الجغرافيا', 'الفيزياء', 'الكيمياء', 'الأحياء',
+            'التربية الإسلامية', 'الحاسوب', 'الفنون', 'التربية البدنية'
+        ];
         this.timeSlots = [
             '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'
         ];
@@ -55,6 +61,8 @@ class ScheduleManager {
         this.initializeTable();
         this.bindEvents();
         this.updateStatistics();
+        this.updateSubjectDropdown();
+        this.displaySubjectsList();
         this.showWelcomeMessage();
     }
 
@@ -93,14 +101,22 @@ class ScheduleManager {
     }
 
     fillCell(cell, classData) {
-        // التحقق من صيغة البيانات الجديدة والقديمة
+        // دعم المواد المتعددة في نفس الخانة
+        if (Array.isArray(classData)) {
+            // البيانات الجديدة - مصفوفة من المواد
+            this.fillMultipleClasses(cell, classData);
+        } else {
+            // البيانات القديمة - مادة واحدة فقط
+            this.fillSingleClass(cell, classData);
+        }
+    }
+
+    fillSingleClass(cell, classData) {
         let subject, teacher;
         if (typeof classData === 'string') {
-            // البيانات القديمة (فقط اسم المادة)
             subject = classData;
             teacher = '';
         } else {
-            // البيانات الجديدة (كائن يحتوي على المادة والمدرس)
             subject = classData.subject || classData;
             teacher = classData.teacher || '';
         }
@@ -122,6 +138,66 @@ class ScheduleManager {
         `;
         const tooltipText = teacher ? `${subject} - أ. ${teacher}` : subject;
         cell.title = `${tooltipText} - ${this.dayNames[cell.dataset.day]} ${this.formatTime(cell.dataset.time)}`;
+    }
+
+    fillMultipleClasses(cell, classesArray) {
+        cell.className = 'schedule-cell multiple-classes';
+        
+        let classesHtml = '';
+        classesArray.forEach((classData, index) => {
+            const subject = classData.subject;
+            const teacher = classData.teacher || '';
+            const bgColor = this.getSubjectColor(subject);
+            
+            classesHtml += `
+                <div class="class-item" style="background: ${bgColor}; margin-bottom: 2px; padding: 2px 5px; border-radius: 3px; font-size: 0.75rem;">
+                    <strong>${subject}</strong>
+                    ${teacher ? `<br><small>أ. ${teacher}</small>` : ''}
+                    <button class="btn btn-sm btn-danger ms-1" style="font-size: 0.6rem; padding: 1px 3px;" 
+                            onclick="scheduleManager.removeSpecificClass('${cell.dataset.day}', '${cell.dataset.time}', ${classData.id})">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+            `;
+        });
+        
+        cell.innerHTML = `
+            <div class="cell-controls">
+                <button class="btn btn-sm btn-success" onclick="scheduleManager.addToExistingSlot('${cell.dataset.day}', '${cell.dataset.time}')">
+                    <i class="bi bi-plus"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="scheduleManager.removeClass('${cell.dataset.day}', '${cell.dataset.time}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="multiple-classes-container">
+                ${classesHtml}
+            </div>
+        `;
+        
+        // تحديث العنوان المساعد
+        const subjects = classesArray.map(c => c.subject).join(', ');
+        cell.title = `${subjects} - ${this.dayNames[cell.dataset.day]} ${this.formatTime(cell.dataset.time)}`;
+    }
+
+    getSubjectColor(subject) {
+        const colors = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+            'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)'
+        ];
+        
+        // استخدام hash بسيط لاختيار لون ثابت للمادة
+        let hash = 0;
+        for (let i = 0; i < subject.length; i++) {
+            hash = subject.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
     }
 
     setEmptyCell(cell) {
@@ -214,6 +290,17 @@ class ScheduleManager {
             this.createEmptyTemplate();
         });
 
+        // لوحة تحكم المواد
+        document.getElementById('addSubjectBtn').addEventListener('click', () => {
+            this.addNewSubject();
+        });
+
+        document.getElementById('newSubjectInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.addNewSubject();
+            }
+        });
+
         // نموذج التعديل
         document.getElementById('saveEditBtn').addEventListener('click', () => {
             this.saveEdit();
@@ -236,26 +323,39 @@ class ScheduleManager {
             return;
         }
 
-        const scheduleKey = `${day}-${time}`;
-        const classData = {
-            subject: subject,
-            teacher: teacher
-        };
+        // استخدام الوظيفة الجديدة لإضافة المادة
+        if (this.addClassToSlot(day, time, subject, teacher)) {
+            this.initializeTable();
+            this.updateStatistics();
+            this.resetForm();
+            this.showAlert(`تم إضافة حصة ${subject} مع الأستاذ ${teacher} يوم ${this.dayNames[day]} في ${this.formatTime(time)}`, 'success');
+        }
+    }
 
-        if (this.schedule[scheduleKey]) {
-            const existingClass = this.schedule[scheduleKey];
-            const existingSubject = typeof existingClass === 'string' ? existingClass : existingClass.subject;
-            if (!confirm(`هناك حصة ${existingSubject} في هذا الوقت. هل تريد استبدالها؟`)) {
-                return;
+    // وظيفة لإضافة مادة إلى خانة موجودة (للمواد المتعددة)
+    addToExistingSlot(day, time) {
+        const subject = prompt(`إضافة مادة جديدة يوم ${this.dayNames[day]} في ${this.formatTime(time)}:\nأدخل اسم المادة:`);
+        if (subject && subject.trim()) {
+            const teacher = prompt(`أدخل اسم المدرس للمادة "${subject.trim()}":`);
+            if (teacher && teacher.trim()) {
+                if (this.addClassToSlot(day, time, subject.trim(), teacher.trim())) {
+                    this.initializeTable();
+                    this.updateStatistics();
+                    this.showAlert(`تم إضافة حصة ${subject.trim()} مع الأستاذ ${teacher.trim()}`, 'success');
+                }
             }
         }
+    }
 
-        this.schedule[scheduleKey] = classData;
-        this.saveToStorage();
-        this.initializeTable();
-        this.updateStatistics();
-        this.resetForm();
-        this.showAlert(`تم إضافة حصة ${subject} مع الأستاذ ${teacher} يوم ${this.dayNames[day]} في ${this.formatTime(time)}`, 'success');
+    // وظيفة لحذف مادة محددة من خانة تحتوي على عدة مواد
+    removeSpecificClass(day, time, classId) {
+        if (confirm('هل أنت متأكد من حذف هذه المادة؟')) {
+            if (this.removeClassFromSlot(day, time, classId)) {
+                this.initializeTable();
+                this.updateStatistics();
+                this.showAlert('تم حذف المادة بنجاح', 'success');
+            }
+        }
     }
 
     quickAdd(day, time) {
@@ -794,6 +894,197 @@ class ScheduleManager {
                 alertDiv.remove();
             }
         }, 5000);
+    }
+
+    // وظائف إدارة المواد المخصصة
+    loadCustomSubjects() {
+        try {
+            const data = localStorage.getItem('customSubjects');
+            return data ? JSON.parse(data) : null;
+        } catch (error) {
+            console.error('خطأ في تحميل المواد المخصصة:', error);
+            return null;
+        }
+    }
+
+    saveCustomSubjects() {
+        try {
+            localStorage.setItem('customSubjects', JSON.stringify(this.customSubjects));
+        } catch (error) {
+            console.error('خطأ في حفظ المواد المخصصة:', error);
+        }
+    }
+
+    addCustomSubject(subjectName) {
+        if (subjectName && !this.customSubjects.includes(subjectName)) {
+            this.customSubjects.push(subjectName);
+            this.saveCustomSubjects();
+            this.updateSubjectDropdown();
+            return true;
+        }
+        return false;
+    }
+
+    removeCustomSubject(subjectName) {
+        const index = this.customSubjects.indexOf(subjectName);
+        if (index > -1) {
+            this.customSubjects.splice(index, 1);
+            this.saveCustomSubjects();
+            this.updateSubjectDropdown();
+            return true;
+        }
+        return false;
+    }
+
+    updateSubjectDropdown() {
+        const subjectInput = document.getElementById('subjectInput');
+        if (subjectInput) {
+            // تحديث قائمة البيانات للإكمال التلقائي
+            let datalistId = 'subjectsList';
+            let datalist = document.getElementById(datalistId);
+            
+            if (!datalist) {
+                datalist = document.createElement('datalist');
+                datalist.id = datalistId;
+                subjectInput.parentNode.appendChild(datalist);
+                subjectInput.setAttribute('list', datalistId);
+            }
+            
+            datalist.innerHTML = '';
+            this.customSubjects.forEach(subject => {
+                const option = document.createElement('option');
+                option.value = subject;
+                datalist.appendChild(option);
+            });
+        }
+    }
+
+    // تعديل وظيفة addClass لدعم المواد المتعددة
+    addClassToSlot(day, time, subject, teacher) {
+        const scheduleKey = `${day}-${time}`;
+        
+        // التحقق من وجود البيانات الحالية
+        if (!this.schedule[scheduleKey]) {
+            this.schedule[scheduleKey] = [];
+        }
+        
+        // إذا كانت البيانات في صيغة قديمة، تحويلها للصيغة الجديدة
+        if (!Array.isArray(this.schedule[scheduleKey])) {
+            const oldData = this.schedule[scheduleKey];
+            if (typeof oldData === 'string') {
+                this.schedule[scheduleKey] = [{
+                    subject: oldData,
+                    teacher: '',
+                    id: Date.now()
+                }];
+            } else {
+                this.schedule[scheduleKey] = [{
+                    subject: oldData.subject,
+                    teacher: oldData.teacher,
+                    id: Date.now()
+                }];
+            }
+        }
+        
+        // التحقق من عدم تجاوز الحد الأقصى (3 مواد)
+        if (this.schedule[scheduleKey].length >= 3) {
+            this.showAlert('لا يمكن إضافة أكثر من 3 مواد في نفس الوقت!', 'warning');
+            return false;
+        }
+        
+        // إضافة المادة الجديدة
+        const newClass = {
+            subject: subject,
+            teacher: teacher,
+            id: Date.now() + Math.random() // معرف فريد
+        };
+        
+        this.schedule[scheduleKey].push(newClass);
+        this.saveToStorage();
+        return true;
+    }
+
+    // تعديل وظيفة removeClass للمواد المتعددة
+    removeClassFromSlot(day, time, classId = null) {
+        const scheduleKey = `${day}-${time}`;
+        
+        if (!this.schedule[scheduleKey]) {
+            return false;
+        }
+        
+        // إذا لم يتم تحديد معرف محدد، حذف الكل
+        if (!classId) {
+            delete this.schedule[scheduleKey];
+        } else {
+            // حذف مادة محددة
+            if (Array.isArray(this.schedule[scheduleKey])) {
+                this.schedule[scheduleKey] = this.schedule[scheduleKey].filter(cls => cls.id !== classId);
+                
+                // إذا لم تبق أي مواد، حذف المفتاح كاملاً
+                if (this.schedule[scheduleKey].length === 0) {
+                    delete this.schedule[scheduleKey];
+                }
+            } else {
+                // البيانات في الصيغة القديمة
+                delete this.schedule[scheduleKey];
+            }
+        }
+        
+        this.saveToStorage();
+        return true;
+    }
+
+    // وظائف إضافية لإدارة المواد
+    addNewSubject() {
+        const input = document.getElementById('newSubjectInput');
+        const subjectName = input.value.trim();
+        
+        if (!subjectName) {
+            this.showAlert('يرجى إدخال اسم المادة', 'warning');
+            return;
+        }
+
+        if (this.customSubjects.includes(subjectName)) {
+            this.showAlert('هذه المادة موجودة بالفعل', 'warning');
+            return;
+        }
+
+        this.customSubjects.push(subjectName);
+        this.saveCustomSubjects();
+        this.updateSubjectDropdown();
+        this.displaySubjectsList();
+        
+        input.value = '';
+        this.showAlert(`تم إضافة المادة "${subjectName}" بنجاح`, 'success');
+    }
+
+    displaySubjectsList() {
+        const container = document.getElementById('subjectsList');
+        if (!container) return;
+
+        container.innerHTML = '';
+        
+        this.customSubjects.forEach(subject => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary position-relative me-2 mb-2 p-2';
+            badge.innerHTML = `
+                ${subject}
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 start-100 translate-middle" 
+                        style="font-size: 0.5rem; padding: 2px;" 
+                        onclick="scheduleManager.removeSubjectFromList('${subject}')"
+                        aria-label="حذف ${subject}">
+                </button>
+            `;
+            container.appendChild(badge);
+        });
+    }
+
+    removeSubjectFromList(subjectName) {
+        if (confirm(`هل أنت متأكد من حذف المادة "${subjectName}"؟`)) {
+            this.removeCustomSubject(subjectName);
+            this.displaySubjectsList();
+            this.showAlert(`تم حذف المادة "${subjectName}" بنجاح`, 'success');
+        }
     }
 }
 

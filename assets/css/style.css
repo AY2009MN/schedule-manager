@@ -4,7 +4,7 @@
 :root {
     --primary-color: #0d6efd;
     --secondary-color: #6c757d;
-    --success-color: #198754;
+    --success-color: #0ea5e9; /* أزرق سماوي بدلاً من الأخضر */
     --info-color: #0dcaf0;
     --warning-color: #ffc107;
     --danger-color: #dc3545;
@@ -554,7 +554,7 @@ body {
 
 /* أنماط لوحة تحكم المواد */
 .subjects-control-panel {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, #0d6efd 0%, #0ea5e9 100%);
 }
 
 .subjects-control-panel .card-header {

@@ -1,0 +1,43 @@
+{
+  "name": "schedule-manager",
+  "version": "1.0.0",
+  "description": "نظام تفاعلي لإدارة الجداول الدراسية باللغة العربية",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "python -m http.server 8000",
+    "build": "echo 'No build process required for static files'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "schedule",
+    "arabic",
+    "education",
+    "timetable",
+    "student",
+    "class",
+    "جدول",
+    "مدرسة",
+    "حصص"
+  ],
+  "author": "مدير الجدول الدراسي",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/username/schedule-manager.git"
+  },
+  "homepage": "https://username.github.io/schedule-manager/",
+  "bugs": {
+    "url": "https://github.com/username/schedule-manager/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "engines": {
+    "node": ">=12.0.0"
+  }
+}

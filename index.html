@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدير الجدول الدراسي - Schedule Manager</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts - Arabic Support -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-primary text-white py-4 mb-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-0">
+                        <i class="bi bi-calendar-week me-3"></i>
+                        مدير الجدول الدراسي
+                    </h1>
+                    <p class="mb-0 mt-2">نظام تفاعلي لإدارة الحصص الدراسية</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button class="btn btn-outline-light" id="clearDataBtn">
+                        <i class="bi bi-trash"></i> مسح البيانات
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Welcome Section -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+                        <h2 class="card-title text-primary">
+                            <i class="bi bi-star-fill me-2"></i>
+                            مرحباً بك في مدير الجدول الدراسي
+                        </h2>
+                        <p class="card-text lead">أضف حصصك الدراسية وشاهد جدولك الأسبوعي بطريقة تفاعلية</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Class Form -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            إضافة حصة جديدة
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="classForm" class="row g-3">
+                            <div class="col-md-3">
+                                <label for="daySelect" class="form-label">اليوم</label>
+                                <select class="form-select" id="daySelect" required>
+                                    <option value="">اختر اليوم</option>
+                                    <option value="sunday">الأحد</option>
+                                    <option value="monday">الاثنين</option>
+                                    <option value="tuesday">الثلاثاء</option>
+                                    <option value="wednesday">الأربعاء</option>
+                                    <option value="thursday">الخميس</option>
+                                    <option value="friday">الجمعة</option>
+                                    <option value="saturday">السبت</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label for="timeSelect" class="form-label">الوقت</label>
+                                <select class="form-select" id="timeSelect" required>
+                                    <option value="">اختر الوقت</option>
+                                    <option value="16:00">4:00 عصراً</option>
+                                    <option value="17:00">5:00 عصراً</option>
+                                    <option value="18:00">6:00 عصراً</option>
+                                    <option value="19:00">7:00 مساءً</option>
+                                    <option value="20:00">8:00 مساءً</option>
+                                    <option value="21:00">9:00 مساءً</option>
+                                    <option value="22:00">10:00 مساءً</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label for="subjectInput" class="form-label">المادة</label>
+                                <input type="text" class="form-control" id="subjectInput" 
+                                       placeholder="أدخل اسم المادة" required>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <label for="teacherInput" class="form-label">اسم المدرس</label>
+                                <input type="text" class="form-control" id="teacherInput" 
+                                       placeholder="أدخل اسم المدرس" required>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label class="form-label d-block">&nbsp;</label>
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bi bi-plus"></i> إضافة
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schedule Table -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="bi bi-table me-2"></i>
+                            الجدول الأسبوعي
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="scheduleTable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>الوقت</th>
+                                        <th>الأحد</th>
+                                        <th>الاثنين</th>
+                                        <th>الثلاثاء</th>
+                                        <th>الأربعاء</th>
+                                        <th>الخميس</th>
+                                        <th>الجمعة</th>
+                                        <th>السبت</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="scheduleBody">
+                                    <!-- سيتم ملء الجدول ديناميكياً -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h3 class="card-title mb-0">
+                            <i class="bi bi-gear me-2"></i>
+                            إعدادات سريعة
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-primary w-100" id="exportBtn">
+                                    <i class="bi bi-download me-2"></i>
+                                    تصدير الجدول
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-success w-100" id="printBtn">
+                                    <i class="bi bi-printer me-2"></i>
+                                    طباعة الجدول
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-outline-info w-100" id="shareBtn">
+                                    <i class="bi bi-share me-2"></i>
+                                    مشاركة الجدول
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="row mb-5">
+            <div class="col-md-4">
+                <div class="card text-center bg-primary text-white">
+                    <div class="card-body">
+                        <i class="bi bi-book display-4 mb-3"></i>
+                        <h4 id="totalClasses">0</h4>
+                        <p class="mb-0">إجمالي الحصص</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center bg-success text-white">
+                    <div class="card-body">
+                        <i class="bi bi-calendar-day display-4 mb-3"></i>
+                        <h4 id="activeDays">0</h4>
+                        <p class="mb-0">الأيام النشطة</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center bg-info text-white">
+                    <div class="card-body">
+                        <i class="bi bi-clock display-4 mb-3"></i>
+                        <h4 id="totalHours">0</h4>
+                        <p class="mb-0">إجمالي الساعات</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-4 mt-5">
+        <div class="container">
+            <p class="mb-0">© 2025 ايمن البريك</p>
+            <p class="mb-0 mt-2">
+                
+            </p>
+        </div>
+    </footer>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">تعديل الحصة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <div class="mb-3">
+                            <label for="editSubject" class="form-label">المادة</label>
+                            <input type="text" class="form-control" id="editSubject" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTeacher" class="form-label">اسم المدرس</label>
+                            <input type="text" class="form-control" id="editTeacher" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDay" class="form-label">اليوم</label>
+                            <select class="form-select" id="editDay" required>
+                                <option value="sunday">الأحد</option>
+                                <option value="monday">الاثنين</option>
+                                <option value="tuesday">الثلاثاء</option>
+                                <option value="wednesday">الأربعاء</option>
+                                <option value="thursday">الخميس</option>
+                                <option value="friday">الجمعة</option>
+                                <option value="saturday">السبت</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editTime" class="form-label">الوقت</label>
+                            <select class="form-select" id="editTime" required>
+                                <option value="16:00">4:00 عصراً</option>
+                                <option value="17:00">5:00 عصراً</option>
+                                <option value="18:00">6:00 عصراً</option>
+                                <option value="19:00">7:00 مساءً</option>
+                                <option value="20:00">8:00 مساءً</option>
+                                <option value="21:00">9:00 مساءً</option>
+                                <option value="22:00">10:00 مساءً</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-primary" id="saveEditBtn">حفظ التغييرات</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="assets/js/script.js"></script>
+</body>
+</html>

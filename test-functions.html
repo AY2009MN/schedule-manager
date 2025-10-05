@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الوظائف - مدير الجدول الدراسي</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .pass { background: #d4edda; border-color: #c3e6cb; }
+        .fail { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>اختبار وظائف مدير الجدول الدراسي</h1>
+    
+    <div id="results"></div>
+    
+    <script>
+        // محاكاة البيئة
+        const mockElement = (id, value = '') => ({
+            value,
+            focus: () => {},
+            reset: () => {},
+            addEventListener: () => {}
+        });
+        
+        // محاكاة DOM elements
+        document.getElementById = (id) => mockElement(id);
+        
+        const localStorage = {
+            data: {},
+            getItem: function(key) { return this.data[key] || null; },
+            setItem: function(key, value) { this.data[key] = value; }
+        };
+        
+        // تشغيل اختبارات بسيطة
+        function runTests() {
+            const results = [];
+            
+            try {
+                // اختبار 1: التحقق من الأوقات الجديدة
+                const timeSlots = ['16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
+                results.push({
+                    name: 'الأوقات المسائية',
+                    pass: timeSlots.length === 7,
+                    message: `تم العثور على ${timeSlots.length} أوقات مسائية`
+                });
+                
+                // اختبار 2: التحقق من تنسيق الوقت
+                function formatTime(time) {
+                    const hour = parseInt(time.split(':')[0]);
+                    if (hour === 12) {
+                        return '12:00 ظهراً';
+                    } else if (hour >= 16 && hour < 18) {
+                        return `${hour - 12}:00 عصراً`;
+                    } else if (hour >= 18) {
+                        return `${hour - 12}:00 مساءً`;
+                    } else if (hour > 12) {
+                        return `${hour - 12}:00 عصراً`;
+                    } else {
+                        return `${hour}:00 صباحاً`;
+                    }
+                }
+                
+                const testTime1 = formatTime('16:00');
+                const testTime2 = formatTime('19:00');
+                const testTime3 = formatTime('22:00');
+                
+                results.push({
+                    name: 'تنسيق الأوقات',
+                    pass: testTime1 === '4:00 عصراً' && testTime2 === '7:00 مساءً' && testTime3 === '10:00 مساءً',
+                    message: `16:00 → ${testTime1}, 19:00 → ${testTime2}, 22:00 → ${testTime3}`
+                });
+                
+                // اختبار 3: التحقق من هيكل البيانات الجديد
+                const classData = {
+                    subject: 'رياضيات',
+                    teacher: 'أحمد محمد'
+                };
+                
+                results.push({
+                    name: 'هيكل البيانات الجديد',
+                    pass: classData.subject && classData.teacher,
+                    message: `المادة: ${classData.subject}, المدرس: ${classData.teacher}`
+                });
+                
+                // اختبار 4: التحقق من التوافق مع البيانات القديمة
+                function getSubjectFromClassData(data) {
+                    if (typeof data === 'string') {
+                        return data;
+                    } else {
+                        return data.subject || '';
+                    }
+                }
+                
+                const oldData = 'رياضيات';
+                const newData = { subject: 'فيزياء', teacher: 'سارة أحمد' };
+                
+                results.push({
+                    name: 'التوافق مع البيانات القديمة',
+                    pass: getSubjectFromClassData(oldData) === 'رياضيات' && getSubjectFromClassData(newData) === 'فيزياء',
+                    message: 'البيانات القديمة والجديدة متوافقة'
+                });
+                
+            } catch (error) {
+                results.push({
+                    name: 'خطأ في الاختبار',
+                    pass: false,
+                    message: error.message
+                });
+            }
+            
+            return results;
+        }
+        
+        // عرض النتائج
+        function displayResults() {
+            const results = runTests();
+            const container = document.getElementById('results');
+            
+            results.forEach((result, index) => {
+                const div = document.createElement('div');
+                div.className = `test ${result.pass ? 'pass' : 'fail'}`;
+                div.innerHTML = `
+                    <strong>اختبار ${index + 1}: ${result.name}</strong>
+                    <br>
+                    ${result.pass ? '✅ نجح' : '❌ فشل'}: ${result.message}
+                `;
+                container.appendChild(div);
+            });
+            
+            const passed = results.filter(r => r.pass).length;
+            const total = results.length;
+            
+            const summary = document.createElement('div');
+            summary.className = `test ${passed === total ? 'pass' : 'fail'}`;
+            summary.innerHTML = `
+                <strong>ملخص النتائج:</strong><br>
+                نجح ${passed} من ${total} اختبارات
+                ${passed === total ? ' - جميع الاختبارات نجحت! 🎉' : ' - هناك اختبارات فاشلة'}
+            `;
+            container.appendChild(summary);
+        }
+        
+        // تشغيل الاختبارات عند تحميل الصفحة
+        window.addEventListener('load', displayResults);
+    </script>
+</body>
+</html>

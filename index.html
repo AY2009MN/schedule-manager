@@ -160,25 +160,62 @@
                             إعدادات سريعة
                         </h3>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body quick-actions">
                         <div class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <button class="btn btn-outline-primary w-100" id="exportBtn">
                                     <i class="bi bi-download me-2"></i>
-                                    تصدير الجدول
+                                    تصدير البيانات
                                 </button>
                             </div>
-                            <div class="col-md-4">
-                                <button class="btn btn-outline-success w-100" id="printBtn">
+                            <div class="col-md-3">
+                                <button class="btn btn-outline-success w-100" id="importBtn">
+                                    <i class="bi bi-upload me-2"></i>
+                                    استيراد البيانات
+                                </button>
+                                <input type="file" id="importFile" accept=".json" class="hidden-file-input" aria-label="استيراد ملف البيانات">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-outline-info w-100" id="printBtn">
                                     <i class="bi bi-printer me-2"></i>
                                     طباعة الجدول
                                 </button>
                             </div>
-                            <div class="col-md-4">
-                                <button class="btn btn-outline-info w-100" id="shareBtn">
+                            <div class="col-md-3">
+                                <button class="btn btn-outline-warning w-100" id="shareBtn">
                                     <i class="bi bi-share me-2"></i>
                                     مشاركة الجدول
                                 </button>
+                            </div>
+                        </div>
+                        
+                        <!-- إدارة ملفات البيانات -->
+                        <hr class="my-4">
+                        <div class="team-data-section">
+                            <h5 class="text-center mb-3">
+                                <i class="bi bi-database me-2 data-icon"></i>
+                                إدارة بيانات الفريق
+                            </h5>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <button class="btn btn-success w-100" id="saveToFileBtn">
+                                        <i class="bi bi-file-earmark-arrow-down me-2"></i>
+                                        حفظ في ملف للفريق
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-info w-100" id="loadFromFileBtn">
+                                        <i class="bi bi-file-earmark-arrow-up me-2"></i>
+                                        تحميل من ملف الفريق
+                                    </button>
+                                    <input type="file" id="teamFile" accept=".json" class="hidden-file-input" aria-label="تحميل ملف بيانات الفريق">
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-warning w-100" id="createTemplateBtn">
+                                        <i class="bi bi-file-earmark-plus me-2"></i>
+                                        إنشاء قالب فارغ
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -275,6 +312,54 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
                     <button type="button" class="btn btn-primary" id="saveEditBtn">حفظ التغييرات</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- إرشادات استخدام إدارة بيانات الفريق -->
+    <div class="container mb-4">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    كيفية استخدام إدارة بيانات الفريق
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6 class="text-success">
+                            <i class="bi bi-file-earmark-arrow-down me-2"></i>
+                            حفظ في ملف للفريق
+                        </h6>
+                        <p class="small text-muted">
+                            يحفظ جدولك الحالي في ملف JSON يمكن مشاركته مع أعضاء الفريق
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-info">
+                            <i class="bi bi-file-earmark-arrow-up me-2"></i>
+                            تحميل من ملف الفريق
+                        </h6>
+                        <p class="small text-muted">
+                            يحمّل ملف JSON محفوظ مسبقاً لعرض جدول أحد أعضاء الفريق
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-warning">
+                            <i class="bi bi-file-earmark-plus me-2"></i>
+                            إنشاء قالب فارغ
+                        </h6>
+                        <p class="small text-muted">
+                            ينشئ ملف قالب فارغ يمكن استخدامه لبدء جدول جديد
+                        </p>
+                    </div>
+                </div>
+                <hr>
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>تنبيه:</strong> عند تحميل ملف جديد، سيتم استبدال الجدول الحالي. تأكد من حفظ عملك أولاً!
                 </div>
             </div>
         </div>

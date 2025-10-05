@@ -435,3 +435,50 @@ body {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
 }
+
+/* أنماط خاصة لملفات الرفع المخفية */
+.hidden-file-input {
+    display: none !important;
+}
+
+/* تحسين أزرار الفعل السريع */
+.quick-actions .btn {
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.quick-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* أنماط خاصة لإدارة ملفات الفريق */
+.team-data-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.team-data-section h5 {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* تحسين أيقونات البيانات */
+.data-icon {
+    font-size: 1.2em;
+    color: var(--success-color);
+}
+
+/* رسائل حالة العمليات */
+.status-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1060;
+    max-width: 400px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}

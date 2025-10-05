@@ -180,6 +180,40 @@ class ScheduleManager {
             this.shareSchedule();
         });
 
+        // أزرار استيراد البيانات
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.getElementById('importFile').click();
+        });
+
+        document.getElementById('importFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.importData(file);
+                e.target.value = ''; // إعادة تعيين المدخل
+            }
+        });
+
+        // أزرار إدارة ملفات الفريق
+        document.getElementById('saveToFileBtn').addEventListener('click', () => {
+            this.saveToTeamFile();
+        });
+
+        document.getElementById('loadFromFileBtn').addEventListener('click', () => {
+            document.getElementById('teamFile').click();
+        });
+
+        document.getElementById('teamFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                this.loadFromTeamFile(file);
+                e.target.value = ''; // إعادة تعيين المدخل
+            }
+        });
+
+        document.getElementById('createTemplateBtn').addEventListener('click', () => {
+            this.createEmptyTemplate();
+        });
+
         // نموذج التعديل
         document.getElementById('saveEditBtn').addEventListener('click', () => {
             this.saveEdit();
@@ -614,6 +648,152 @@ class ScheduleManager {
             }
         });
         return results;
+    }
+
+    // وظائف إدارة ملفات البيانات للفريق
+    saveToTeamFile() {
+        const teamData = {
+            version: "1.0",
+            timestamp: new Date().toISOString(),
+            teamName: "فريق العمل",
+            schedule: this.schedule,
+            metadata: {
+                totalClasses: Object.keys(this.schedule).length,
+                activeDays: new Set(Object.keys(this.schedule).map(key => key.split('-')[0])).size,
+                createdBy: "مدير الجدول الدراسي",
+                exportDate: new Date().toLocaleDateString('ar-SA')
+            }
+        };
+
+        const dataStr = JSON.stringify(teamData, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `team_schedule_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        this.showAlert('تم حفظ ملف بيانات الفريق بنجاح! يمكنك مشاركته مع أعضاء الفريق.', 'success');
+    }
+
+    loadFromTeamFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const teamData = JSON.parse(e.target.result);
+                
+                // التحقق من صحة البيانات
+                if (!teamData.schedule) {
+                    throw new Error('ملف البيانات غير صحيح');
+                }
+
+                // حفظ البيانات الحالية كنسخة احتياطية
+                const backup = { ...this.schedule };
+                
+                // تحميل البيانات الجديدة
+                this.schedule = teamData.schedule;
+                this.saveToStorage();
+                this.updateScheduleDisplay();
+                this.updateStats();
+
+                // عرض معلومات الملف المحمّل
+                let message = `تم تحميل بيانات الفريق بنجاح!\n\n`;
+                if (teamData.metadata) {
+                    message += `📊 إحصائيات الملف:\n`;
+                    message += `• إجمالي الحصص: ${teamData.metadata.totalClasses}\n`;
+                    message += `• الأيام النشطة: ${teamData.metadata.activeDays}\n`;
+                    message += `• تاريخ الإنشاء: ${teamData.metadata.exportDate}\n`;
+                }
+
+                this.showAlert(message, 'success');
+
+            } catch (error) {
+                console.error('خطأ في تحميل ملف الفريق:', error);
+                this.showAlert('خطأ في تحميل ملف البيانات. تأكد من صحة الملف وحاول مرة أخرى.', 'danger');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    createEmptyTemplate() {
+        const template = {
+            version: "1.0",
+            timestamp: new Date().toISOString(),
+            teamName: "فريق العمل - قالب فارغ",
+            schedule: {},
+            metadata: {
+                totalClasses: 0,
+                activeDays: 0,
+                createdBy: "مدير الجدول الدراسي",
+                exportDate: new Date().toLocaleDateString('ar-SA'),
+                isTemplate: true,
+                instructions: "هذا قالب فارغ لإنشاء جدول دراسي جديد للفريق"
+            }
+        };
+
+        const dataStr = JSON.stringify(template, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `team_schedule_template_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        this.showAlert('تم إنشاء قالب فارغ للفريق! يمكن استخدامه لبدء جدول جديد.', 'info');
+    }
+
+    importData(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                // التحقق من نوع البيانات
+                let scheduleData;
+                if (data.schedule) {
+                    // ملف فريق
+                    scheduleData = data.schedule;
+                } else {
+                    // ملف تصدير عادي
+                    scheduleData = data;
+                }
+
+                this.schedule = scheduleData;
+                this.saveToStorage();
+                this.updateScheduleDisplay();
+                this.updateStats();
+
+                this.showAlert('تم استيراد البيانات بنجاح!', 'success');
+
+            } catch (error) {
+                console.error('خطأ في استيراد البيانات:', error);
+                this.showAlert('خطأ في استيراد البيانات. تأكد من صحة الملف.', 'danger');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    showStatusMessage(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} status-message alert-dismissible fade show`;
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // إزالة الرسالة تلقائياً بعد 5 ثوان
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
     }
 }
 

@@ -92,9 +92,22 @@
                             </div>
                             
                             <div class="col-md-2">
-                                <label for="subjectInput" class="form-label">المادة</label>
-                                <input type="text" class="form-control" id="subjectInput" 
-                                       placeholder="أدخل اسم المادة" required>
+                                <label for="gradeSelect" class="form-label">الصف</label>
+                                <select class="form-select" id="gradeSelect" required>
+                                    <option value="">اختر الصف</option>
+                                    <option value="grade10">الصف العاشر</option>
+                                    <option value="grade11_science">الحادي عشر علمي</option>
+                                    <option value="grade11_arts">الحادي عشر أدبي</option>
+                                    <option value="grade12_science">الثاني عشر علمي</option>
+                                    <option value="grade12_arts">الثاني عشر أدبي</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <label for="subjectSelect" class="form-label">المادة</label>
+                                <select class="form-select" id="subjectSelect" required>
+                                    <option value="">اختر المادة</option>
+                                </select>
                             </div>
                             
                             <div class="col-md-3">
@@ -103,7 +116,7 @@
                                        placeholder="أدخل اسم المدرس" required>
                             </div>
                             
-                            <div class="col-md-2">
+                            <div class="col-md-1">
                                 <label class="form-label d-block">&nbsp;</label>
                                 <button type="submit" class="btn btn-success w-100">
                                     <i class="bi bi-plus"></i> إضافة
@@ -115,41 +128,112 @@
             </div>
         </div>
 
-        <!-- لوحة تحكم المواد -->
+        <!-- لوحة تحكم الصفوف والمواد -->
         <div class="row mb-5">
             <div class="col-12">
                 <div class="card shadow">
                     <div class="card-header bg-success text-white">
                         <h3 class="card-title mb-0">
                             <i class="bi bi-gear-fill me-2"></i>
-                            لوحة تحكم المواد
+                            لوحة تحكم الصفوف والمواد
                         </h3>
                     </div>
                     <div class="card-body">
-                        <!-- إضافة مادة جديدة -->
-                        <div class="row mb-4">
-                            <div class="col-md-8">
-                                <label for="newSubjectInput" class="form-label">إضافة مادة جديدة</label>
-                                <input type="text" class="form-control" id="newSubjectInput" 
-                                       placeholder="أدخل اسم المادة الجديدة">
-                            </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="button" class="btn btn-success w-100" id="addSubjectBtn">
-                                    <i class="bi bi-plus-circle me-2"></i>
-                                    إضافة المادة
+                        <!-- علامات التبويب -->
+                        <ul class="nav nav-tabs mb-4" id="controlTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="grades-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#grades-pane" type="button" role="tab">
+                                    <i class="bi bi-building me-2"></i>إدارة الصفوف
                                 </button>
-                            </div>
-                        </div>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="subjects-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#subjects-pane" type="button" role="tab">
+                                    <i class="bi bi-book me-2"></i>إدارة المواد
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="mapping-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#mapping-pane" type="button" role="tab">
+                                    <i class="bi bi-link-45deg me-2"></i>ربط المواد بالصفوف
+                                </button>
+                            </li>
+                        </ul>
 
-                        <!-- قائمة المواد الحالية -->
-                        <div class="row">
-                            <div class="col-12">
-                                <h5 class="mb-3">
-                                    <i class="bi bi-list-ul me-2"></i>
-                                    المواد المتاحة
-                                </h5>
+                        <!-- محتوى علامات التبويب -->
+                        <div class="tab-content" id="controlTabsContent">
+                            <!-- إدارة الصفوف -->
+                            <div class="tab-pane fade show active" id="grades-pane" role="tabpanel">
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <label for="newGradeKey" class="form-label">رمز الصف</label>
+                                        <input type="text" class="form-control" id="newGradeKey" 
+                                               placeholder="مثل: grade13">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="newGradeName" class="form-label">اسم الصف</label>
+                                        <input type="text" class="form-control" id="newGradeName" 
+                                               placeholder="مثل: الثالث عشر علمي">
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="button" class="btn btn-primary w-100" id="addGradeBtn">
+                                            <i class="bi bi-plus-circle me-2"></i>إضافة صف
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="gradesList" class="d-flex flex-wrap gap-2">
+                                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                                </div>
+                            </div>
+
+                            <!-- إدارة المواد -->
+                            <div class="tab-pane fade" id="subjects-pane" role="tabpanel">
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <label for="newSubjectKey" class="form-label">رمز المادة</label>
+                                        <input type="text" class="form-control" id="newSubjectKey" 
+                                               placeholder="مثل: psychology">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="newSubjectName" class="form-label">اسم المادة</label>
+                                        <input type="text" class="form-control" id="newSubjectName" 
+                                               placeholder="مثل: علم النفس">
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="button" class="btn btn-primary w-100" id="addSubjectBtn">
+                                            <i class="bi bi-plus-circle me-2"></i>إضافة مادة
+                                        </button>
+                                    </div>
+                                </div>
                                 <div id="subjectsList" class="d-flex flex-wrap gap-2">
-                                    <!-- سيتم ملء هذا القسم بواسطة JavaScript -->
+                                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                                </div>
+                            </div>
+
+                            <!-- ربط المواد بالصفوف -->
+                            <div class="tab-pane fade" id="mapping-pane" role="tabpanel">
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <label for="mappingGradeSelect" class="form-label">اختر الصف</label>
+                                        <select class="form-select" id="mappingGradeSelect">
+                                            <option value="">اختر الصف</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="mappingSubjectSelect" class="form-label">اختر المادة</label>
+                                        <select class="form-select" id="mappingSubjectSelect">
+                                            <option value="">اختر المادة</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="button" class="btn btn-success w-100" id="addMappingBtn">
+                                            <i class="bi bi-link me-2"></i>ربط المادة بالصف
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="mappingDisplay">
+                                    <!-- سيتم ملؤها بواسطة JavaScript -->
                                 </div>
                             </div>
                         </div>
@@ -157,7 +241,7 @@
                         <!-- تنبيه -->
                         <div class="alert alert-info mt-4">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>معلومة:</strong> يمكنك إضافة حتى 3 مواد في نفس الوقت لكل فترة زمنية.
+                            <strong>ملاحظة:</strong> يمكن لكل صف أن يكون له حصة واحدة فقط في نفس الوقت لمنع التعارض.
                         </div>
                     </div>
                 </div>

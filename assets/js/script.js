@@ -2,12 +2,50 @@
 class ScheduleManager {
     constructor() {
         this.schedule = this.loadFromStorage() || {};
-        // تحديث نموذج البيانات لدعم عدة مواد في نفس الوقت
-        this.customSubjects = this.loadCustomSubjects() || [
-            'الرياضيات', 'العلوم', 'اللغة العربية', 'اللغة الإنجليزية',
-            'التاريخ', 'الجغرافيا', 'الفيزياء', 'الكيمياء', 'الأحياء',
-            'التربية الإسلامية', 'الحاسوب', 'الفنون', 'التربية البدنية'
-        ];
+        
+        // نظام الصفوف والمواد الجديد
+        this.grades = {
+            'grade10': 'الصف العاشر',
+            'grade11_science': 'الحادي عشر علمي',
+            'grade11_arts': 'الحادي عشر أدبي',
+            'grade12_science': 'الثاني عشر علمي',
+            'grade12_arts': 'الثاني عشر أدبي'
+        };
+
+        this.subjects = {
+            'math': 'الرياضيات',
+            'physics': 'الفيزياء',
+            'chemistry': 'الكيمياء',
+            'geology': 'الجيولوجيا',
+            'biology': 'الأحياء',
+            'arabic': 'اللغة العربية',
+            'english': 'اللغة الإنجليزية',
+            'french': 'اللغة الفرنسية',
+            'islamic': 'التربية الإسلامية',
+            'history': 'التاريخ',
+            'geography': 'الجغرافيا',
+            'statistics': 'الإحصاء'
+        };
+
+        // ربط المواد بالصفوف
+        this.subjectsByGrade = {
+            'grade10': ['math', 'physics', 'chemistry', 'biology', 'arabic', 'english', 'islamic', 'history', 'geography'],
+            'grade11_science': ['math', 'physics', 'chemistry', 'geology', 'biology', 'arabic', 'english', 'french', 'islamic', 'statistics'],
+            'grade11_arts': ['math', 'arabic', 'english', 'french', 'islamic', 'history', 'geography', 'statistics'],
+            'grade12_science': ['math', 'physics', 'chemistry', 'geology', 'biology', 'arabic', 'english', 'french', 'islamic', 'statistics'],
+            'grade12_arts': ['math', 'arabic', 'english', 'french', 'islamic', 'history', 'geography', 'statistics']
+        };
+
+        // إعدادات مخصصة قابلة للتحديث
+        this.customGrades = this.loadCustomGrades() || {};
+        this.customSubjects = this.loadCustomSubjects() || {};
+        this.customSubjectsByGrade = this.loadCustomSubjectsByGrade() || {};
+
+        // دمج الإعدادات الافتراضية مع المخصصة
+        this.allGrades = { ...this.grades, ...this.customGrades };
+        this.allSubjects = { ...this.subjects, ...this.customSubjects };
+        this.allSubjectsByGrade = { ...this.subjectsByGrade, ...this.customSubjectsByGrade };
+
         this.timeSlots = [
             '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'
         ];
@@ -61,8 +99,10 @@ class ScheduleManager {
         this.initializeTable();
         this.bindEvents();
         this.updateStatistics();
-        this.updateSubjectDropdown();
+        this.updateAllSelects();
+        this.displayGradesList();
         this.displaySubjectsList();
+        this.displayMappings();
         this.showWelcomeMessage();
     }
 
@@ -145,13 +185,15 @@ class ScheduleManager {
         
         let classesHtml = '';
         classesArray.forEach((classData, index) => {
-            const subject = classData.subject;
+            const subject = this.allSubjects[classData.subject] || classData.subject;
             const teacher = classData.teacher || '';
+            const grade = this.allGrades[classData.grade] || classData.grade || '';
             const bgColor = this.getSubjectColor(subject);
             
             classesHtml += `
                 <div class="class-item" style="background: ${bgColor}; margin-bottom: 2px; padding: 2px 5px; border-radius: 3px; font-size: 0.75rem;">
                     <strong>${subject}</strong>
+                    ${grade ? `<br><small class="text-light">${grade}</small>` : ''}
                     ${teacher ? `<br><small>أ. ${teacher}</small>` : ''}
                     <button class="btn btn-sm btn-danger ms-1" style="font-size: 0.6rem; padding: 1px 3px;" 
                             onclick="scheduleManager.removeSpecificClass('${cell.dataset.day}', '${cell.dataset.time}', ${classData.id})">
@@ -176,7 +218,11 @@ class ScheduleManager {
         `;
         
         // تحديث العنوان المساعد
-        const subjects = classesArray.map(c => c.subject).join(', ');
+        const subjects = classesArray.map(c => {
+            const subjectName = this.allSubjects[c.subject] || c.subject;
+            const gradeName = this.allGrades[c.grade] || c.grade || '';
+            return gradeName ? `${subjectName} (${gradeName})` : subjectName;
+        }).join(', ');
         cell.title = `${subjects} - ${this.dayNames[cell.dataset.day]} ${this.formatTime(cell.dataset.time)}`;
     }
 
@@ -290,15 +336,24 @@ class ScheduleManager {
             this.createEmptyTemplate();
         });
 
-        // لوحة تحكم المواد
+        // لوحة تحكم الصفوف والمواد الجديدة
+        document.getElementById('gradeSelect').addEventListener('change', () => {
+            this.updateSubjectSelect();
+        });
+
+        // إدارة الصفوف
+        document.getElementById('addGradeBtn').addEventListener('click', () => {
+            this.addNewGrade();
+        });
+
+        // إدارة المواد
         document.getElementById('addSubjectBtn').addEventListener('click', () => {
             this.addNewSubject();
         });
 
-        document.getElementById('newSubjectInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.addNewSubject();
-            }
+        // إدارة ربط المواد بالصفوف
+        document.getElementById('addMappingBtn').addEventListener('click', () => {
+            this.addSubjectGradeMapping();
         });
 
         // نموذج التعديل
@@ -315,20 +370,27 @@ class ScheduleManager {
     addClass() {
         const day = document.getElementById('daySelect').value;
         const time = document.getElementById('timeSelect').value;
-        const subject = document.getElementById('subjectInput').value.trim();
+        const grade = document.getElementById('gradeSelect').value;
+        const subject = document.getElementById('subjectSelect').value;
         const teacher = document.getElementById('teacherInput').value.trim();
 
-        if (!day || !time || !subject || !teacher) {
+        if (!day || !time || !grade || !subject || !teacher) {
             this.showAlert('يرجى ملء جميع الحقول', 'warning');
             return;
         }
 
-        // استخدام الوظيفة الجديدة لإضافة المادة
-        if (this.addClassToSlot(day, time, subject, teacher)) {
+        // التحقق من التعارض
+        if (this.checkConflict(day, time, grade)) {
+            this.showAlert(`يوجد تعارض! الصف ${this.allGrades[grade]} لديه حصة أخرى في نفس الوقت`, 'danger');
+            return;
+        }
+
+        // إضافة الحصة الجديدة
+        if (this.addClassToSlot(day, time, subject, teacher, grade)) {
             this.initializeTable();
             this.updateStatistics();
             this.resetForm();
-            this.showAlert(`تم إضافة حصة ${subject} مع الأستاذ ${teacher} يوم ${this.dayNames[day]} في ${this.formatTime(time)}`, 'success');
+            this.showAlert(`تم إضافة حصة ${this.allSubjects[subject]} للصف ${this.allGrades[grade]} مع الأستاذ ${teacher}`, 'success');
         }
     }
 
@@ -896,6 +958,124 @@ class ScheduleManager {
         }, 5000);
     }
 
+    // وظائف إدارة الإعدادات المخصصة (الصفوف والمواد وربطها)
+    loadCustomGrades() {
+        try {
+            const data = localStorage.getItem('customGrades');
+            return data ? JSON.parse(data) : {};
+        } catch (error) {
+            console.error('خطأ في تحميل الصفوف المخصصة:', error);
+            return {};
+        }
+    }
+
+    saveCustomGrades() {
+        try {
+            localStorage.setItem('customGrades', JSON.stringify(this.customGrades));
+        } catch (error) {
+            console.error('خطأ في حفظ الصفوف المخصصة:', error);
+        }
+    }
+
+    loadCustomSubjectsByGrade() {
+        try {
+            const data = localStorage.getItem('customSubjectsByGrade');
+            return data ? JSON.parse(data) : {};
+        } catch (error) {
+            console.error('خطأ في تحميل ربط المواد بالصفوف:', error);
+            return {};
+        }
+    }
+
+    saveCustomSubjectsByGrade() {
+        try {
+            localStorage.setItem('customSubjectsByGrade', JSON.stringify(this.customSubjectsByGrade));
+        } catch (error) {
+            console.error('خطأ في حفظ ربط المواد بالصفوف:', error);
+        }
+    }
+
+    // وظائف إدارة الصفوف
+    addCustomGrade(gradeKey, gradeName) {
+        if (gradeKey && gradeName && !this.allGrades[gradeKey]) {
+            this.customGrades[gradeKey] = gradeName;
+            this.allGrades[gradeKey] = gradeName;
+            this.saveCustomGrades();
+            return true;
+        }
+        return false;
+    }
+
+    removeCustomGrade(gradeKey) {
+        if (this.customGrades[gradeKey]) {
+            delete this.customGrades[gradeKey];
+            delete this.allGrades[gradeKey];
+            delete this.customSubjectsByGrade[gradeKey];
+            delete this.allSubjectsByGrade[gradeKey];
+            this.saveCustomGrades();
+            this.saveCustomSubjectsByGrade();
+            return true;
+        }
+        return false;
+    }
+
+    // وظائف ربط المواد بالصفوف
+    addSubjectToGrade(gradeKey, subjectKey) {
+        if (!this.allSubjectsByGrade[gradeKey]) {
+            this.allSubjectsByGrade[gradeKey] = [];
+        }
+        if (!this.allSubjectsByGrade[gradeKey].includes(subjectKey)) {
+            this.allSubjectsByGrade[gradeKey].push(subjectKey);
+            
+            // تحديث الإعدادات المخصصة
+            if (!this.customSubjectsByGrade[gradeKey]) {
+                this.customSubjectsByGrade[gradeKey] = [...(this.subjectsByGrade[gradeKey] || [])];
+            }
+            if (!this.customSubjectsByGrade[gradeKey].includes(subjectKey)) {
+                this.customSubjectsByGrade[gradeKey].push(subjectKey);
+            }
+            
+            this.saveCustomSubjectsByGrade();
+            return true;
+        }
+        return false;
+    }
+
+    removeSubjectFromGrade(gradeKey, subjectKey) {
+        if (this.allSubjectsByGrade[gradeKey]) {
+            const index = this.allSubjectsByGrade[gradeKey].indexOf(subjectKey);
+            if (index > -1) {
+                this.allSubjectsByGrade[gradeKey].splice(index, 1);
+                
+                // تحديث الإعدادات المخصصة
+                if (this.customSubjectsByGrade[gradeKey]) {
+                    const customIndex = this.customSubjectsByGrade[gradeKey].indexOf(subjectKey);
+                    if (customIndex > -1) {
+                        this.customSubjectsByGrade[gradeKey].splice(customIndex, 1);
+                    }
+                }
+                
+                this.saveCustomSubjectsByGrade();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // وظيفة للتحقق من التعارض - منع أكثر من حصة لصف واحد في نفس الوقت
+    checkConflict(day, time, grade, excludeId = null) {
+        const scheduleKey = `${day}-${time}`;
+        const existingClasses = this.schedule[scheduleKey];
+        
+        if (!existingClasses || !Array.isArray(existingClasses)) {
+            return false; // لا يوجد تعارض
+        }
+        
+        return existingClasses.some(classData => {
+            return classData.grade === grade && classData.id !== excludeId;
+        });
+    }
+
     // وظائف إدارة المواد المخصصة
     loadCustomSubjects() {
         try {
@@ -959,8 +1139,8 @@ class ScheduleManager {
         }
     }
 
-    // تعديل وظيفة addClass لدعم المواد المتعددة
-    addClassToSlot(day, time, subject, teacher) {
+    // تعديل وظيفة addClass لدعم نظام الصفوف والمواد الجديد
+    addClassToSlot(day, time, subject, teacher, grade) {
         const scheduleKey = `${day}-${time}`;
         
         // التحقق من وجود البيانات الحالية
@@ -975,20 +1155,23 @@ class ScheduleManager {
                 this.schedule[scheduleKey] = [{
                     subject: oldData,
                     teacher: '',
+                    grade: 'grade10', // افتراضي للبيانات القديمة
                     id: Date.now()
                 }];
             } else {
                 this.schedule[scheduleKey] = [{
                     subject: oldData.subject,
                     teacher: oldData.teacher,
+                    grade: oldData.grade || 'grade10', // افتراضي للبيانات القديمة
                     id: Date.now()
                 }];
             }
         }
         
-        // التحقق من عدم تجاوز الحد الأقصى (3 مواد)
-        if (this.schedule[scheduleKey].length >= 3) {
-            this.showAlert('لا يمكن إضافة أكثر من 3 مواد في نفس الوقت!', 'warning');
+        // التحقق من التعارض (نفس الصف في نفس الوقت)
+        const existingGrade = this.schedule[scheduleKey].find(cls => cls.grade === grade);
+        if (existingGrade) {
+            this.showAlert(`الصف ${this.allGrades[grade]} لديه حصة أخرى في هذا الوقت!`, 'warning');
             return false;
         }
         
@@ -996,6 +1179,7 @@ class ScheduleManager {
         const newClass = {
             subject: subject,
             teacher: teacher,
+            grade: grade,
             id: Date.now() + Math.random() // معرف فريد
         };
         
@@ -1084,6 +1268,249 @@ class ScheduleManager {
             this.removeCustomSubject(subjectName);
             this.displaySubjectsList();
             this.showAlert(`تم حذف المادة "${subjectName}" بنجاح`, 'success');
+        }
+    }
+
+    // وظائف النظام الجديد للصفوف والمواد
+    updateSubjectSelect() {
+        const gradeSelect = document.getElementById('gradeSelect');
+        const subjectSelect = document.getElementById('subjectSelect');
+        
+        if (!gradeSelect || !subjectSelect) return;
+        
+        const selectedGrade = gradeSelect.value;
+        subjectSelect.innerHTML = '<option value="">اختر المادة</option>';
+        
+        if (selectedGrade && this.allSubjectsByGrade[selectedGrade]) {
+            this.allSubjectsByGrade[selectedGrade].forEach(subjectKey => {
+                if (this.allSubjects[subjectKey]) {
+                    const option = document.createElement('option');
+                    option.value = subjectKey;
+                    option.textContent = this.allSubjects[subjectKey];
+                    subjectSelect.appendChild(option);
+                }
+            });
+        }
+    }
+
+    addNewGrade() {
+        const gradeKey = document.getElementById('newGradeKey').value.trim();
+        const gradeName = document.getElementById('newGradeName').value.trim();
+        
+        if (!gradeKey || !gradeName) {
+            this.showAlert('يرجى ملء جميع الحقول', 'warning');
+            return;
+        }
+
+        if (this.allGrades[gradeKey]) {
+            this.showAlert('هذا الصف موجود بالفعل', 'warning');
+            return;
+        }
+
+        if (this.addCustomGrade(gradeKey, gradeName)) {
+            this.updateAllSelects();
+            this.displayGradesList();
+            document.getElementById('newGradeKey').value = '';
+            document.getElementById('newGradeName').value = '';
+            this.showAlert(`تم إضافة الصف "${gradeName}" بنجاح`, 'success');
+        }
+    }
+
+    addNewSubject() {
+        const subjectKey = document.getElementById('newSubjectKey').value.trim();
+        const subjectName = document.getElementById('newSubjectName').value.trim();
+        
+        if (!subjectKey || !subjectName) {
+            this.showAlert('يرجى ملء جميع الحقول', 'warning');
+            return;
+        }
+
+        if (this.allSubjects[subjectKey]) {
+            this.showAlert('هذه المادة موجودة بالفعل', 'warning');
+            return;
+        }
+
+        this.customSubjects[subjectKey] = subjectName;
+        this.allSubjects[subjectKey] = subjectName;
+        this.saveCustomSubjects();
+        
+        this.updateAllSelects();
+        this.displaySubjectsList();
+        document.getElementById('newSubjectKey').value = '';
+        document.getElementById('newSubjectName').value = '';
+        this.showAlert(`تم إضافة المادة "${subjectName}" بنجاح`, 'success');
+    }
+
+    addSubjectGradeMapping() {
+        const gradeKey = document.getElementById('mappingGradeSelect').value;
+        const subjectKey = document.getElementById('mappingSubjectSelect').value;
+        
+        if (!gradeKey || !subjectKey) {
+            this.showAlert('يرجى اختيار الصف والمادة', 'warning');
+            return;
+        }
+
+        if (this.addSubjectToGrade(gradeKey, subjectKey)) {
+            this.updateAllSelects();
+            this.displayMappings();
+            this.showAlert(`تم ربط المادة "${this.allSubjects[subjectKey]}" بالصف "${this.allGrades[gradeKey]}"`, 'success');
+        } else {
+            this.showAlert('هذه المادة مربوطة بالفعل بهذا الصف', 'warning');
+        }
+    }
+
+    updateAllSelects() {
+        // تحديث قائمة الصفوف
+        const gradeSelects = ['gradeSelect', 'mappingGradeSelect'];
+        gradeSelects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">اختر الصف</option>';
+                
+                Object.keys(this.allGrades).forEach(gradeKey => {
+                    const option = document.createElement('option');
+                    option.value = gradeKey;
+                    option.textContent = this.allGrades[gradeKey];
+                    select.appendChild(option);
+                });
+                
+                if (currentValue) select.value = currentValue;
+            }
+        });
+
+        // تحديث قائمة المواد
+        const mappingSubjectSelect = document.getElementById('mappingSubjectSelect');
+        if (mappingSubjectSelect) {
+            mappingSubjectSelect.innerHTML = '<option value="">اختر المادة</option>';
+            
+            Object.keys(this.allSubjects).forEach(subjectKey => {
+                const option = document.createElement('option');
+                option.value = subjectKey;
+                option.textContent = this.allSubjects[subjectKey];
+                mappingSubjectSelect.appendChild(option);
+            });
+        }
+
+        // تحديث قائمة المواد حسب الصف المختار
+        this.updateSubjectSelect();
+    }
+
+    displayGradesList() {
+        const container = document.getElementById('gradesList');
+        if (!container) return;
+
+        container.innerHTML = '';
+        
+        Object.keys(this.allGrades).forEach(gradeKey => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary position-relative me-2 mb-2 p-2';
+            
+            const isCustom = this.customGrades[gradeKey];
+            const deleteButton = isCustom ? 
+                `<button type="button" class="btn-close btn-close-white position-absolute top-0 start-100 translate-middle" 
+                        style="font-size: 0.5rem; padding: 2px;" 
+                        onclick="scheduleManager.removeGradeFromList('${gradeKey}')"
+                        aria-label="حذف ${this.allGrades[gradeKey]}"></button>` : '';
+            
+            badge.innerHTML = `${this.allGrades[gradeKey]}${deleteButton}`;
+            container.appendChild(badge);
+        });
+    }
+
+    displaySubjectsList() {
+        const container = document.getElementById('subjectsList');
+        if (!container) return;
+
+        container.innerHTML = '';
+        
+        Object.keys(this.allSubjects).forEach(subjectKey => {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-info position-relative me-2 mb-2 p-2';
+            
+            const isCustom = this.customSubjects[subjectKey];
+            const deleteButton = isCustom ? 
+                `<button type="button" class="btn-close btn-close-white position-absolute top-0 start-100 translate-middle" 
+                        style="font-size: 0.5rem; padding: 2px;" 
+                        onclick="scheduleManager.removeSubjectFromList('${subjectKey}')"
+                        aria-label="حذف ${this.allSubjects[subjectKey]}"></button>` : '';
+            
+            badge.innerHTML = `${this.allSubjects[subjectKey]}${deleteButton}`;
+            container.appendChild(badge);
+        });
+    }
+
+    displayMappings() {
+        const container = document.getElementById('mappingDisplay');
+        if (!container) return;
+
+        container.innerHTML = '';
+        
+        Object.keys(this.allGrades).forEach(gradeKey => {
+            if (this.allSubjectsByGrade[gradeKey] && this.allSubjectsByGrade[gradeKey].length > 0) {
+                const gradeDiv = document.createElement('div');
+                gradeDiv.className = 'mb-3';
+                
+                const gradeTitle = document.createElement('h6');
+                gradeTitle.className = 'text-primary';
+                gradeTitle.textContent = this.allGrades[gradeKey];
+                gradeDiv.appendChild(gradeTitle);
+                
+                const subjectsDiv = document.createElement('div');
+                subjectsDiv.className = 'd-flex flex-wrap gap-1';
+                
+                this.allSubjectsByGrade[gradeKey].forEach(subjectKey => {
+                    if (this.allSubjects[subjectKey]) {
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-success';
+                        badge.innerHTML = `
+                            ${this.allSubjects[subjectKey]}
+                            <button type="button" class="btn-close btn-close-white ms-1" 
+                                    style="font-size: 0.6rem;" 
+                                    onclick="scheduleManager.removeMappingFromList('${gradeKey}', '${subjectKey}')">
+                            </button>
+                        `;
+                        subjectsDiv.appendChild(badge);
+                    }
+                });
+                
+                gradeDiv.appendChild(subjectsDiv);
+                container.appendChild(gradeDiv);
+            }
+        });
+    }
+
+    removeGradeFromList(gradeKey) {
+        if (confirm(`هل أنت متأكد من حذف الصف "${this.allGrades[gradeKey]}"؟`)) {
+            if (this.removeCustomGrade(gradeKey)) {
+                this.updateAllSelects();
+                this.displayGradesList();
+                this.displayMappings();
+                this.showAlert(`تم حذف الصف بنجاح`, 'success');
+            }
+        }
+    }
+
+    removeSubjectFromList(subjectKey) {
+        if (confirm(`هل أنت متأكد من حذف المادة "${this.allSubjects[subjectKey]}"؟`)) {
+            delete this.customSubjects[subjectKey];
+            delete this.allSubjects[subjectKey];
+            this.saveCustomSubjects();
+            
+            this.updateAllSelects();
+            this.displaySubjectsList();
+            this.displayMappings();
+            this.showAlert(`تم حذف المادة بنجاح`, 'success');
+        }
+    }
+
+    removeMappingFromList(gradeKey, subjectKey) {
+        if (confirm(`هل أنت متأكد من إلغاء ربط المادة "${this.allSubjects[subjectKey]}" بالصف "${this.allGrades[gradeKey]}"؟`)) {
+            if (this.removeSubjectFromGrade(gradeKey, subjectKey)) {
+                this.updateAllSelects();
+                this.displayMappings();
+                this.showAlert(`تم إلغاء الربط بنجاح`, 'success');
+            }
         }
     }
 }
